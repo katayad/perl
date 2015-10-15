@@ -1,0 +1,5 @@
+ls -l | perl -lna -e '$any++; if ($F[4] > 1024*1024){print $F[8]; $cnt++;}END{print $cnt."/".$any." > 1mb"}'
+
+perl -lnaF':' -e 'BEGIN{$row = 0}$col = 0; for $i (@F){if ($i > 10) {print $row.":".$col." "} $col++} $row++;'
+
+perl -MData::Dumper -MDDP -lnaF':' -e 'push(@arr, [@F]); END{print Data::Dumper::Dumper(@arr); p @arr}'

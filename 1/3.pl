@@ -6,5 +6,5 @@ while (<>) {
 	push(@arr, [split(':', $_)]);
 }
 
-print Data::Dumper::Dumper(@arr); 
+print Data::Dumper::Dumper(\@arr); 
 p @arr

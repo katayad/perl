@@ -1,5 +1,8 @@
 package Local::PerlCourse::Currency;
 
+use Exporter 'import';	
+@EXPORT_OK = qw(set_rate);
+
 	our %trans;
 
 	sub set_rate

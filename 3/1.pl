@@ -1,18 +1,18 @@
-use JSON;
 use DDP;
 use Local::PerlCourse::JSONL qw(
 	encode_jsonl
 	decode_jsonl
-);
+	);
 
-%h = (1 => 'dsd', 2 => 'aaaaa');
-%hh = (1 => '34', 2 => 'bb');
+%h = (1 => "h1", 2 => "h2");
+%hh = (1 => "h\nh1", 2 => "hh2");
+
 @ar = (\%h, \%hh);
-$s = Local::PerlCourse::JSON::encode_json(\@ar);
-p $s;
-$sd = "-------------";
-p $sd;
-p Local::PerlCourse::JSON::decode_json($s);
-#Local::PerlCourse::JSON::encode_json(\@ar);
-#$string = encode_jsonl($array_ref);
-#$array_ref = decode_jsonl($string);
+$array_ref = \@ar;
+
+
+$string = encode_jsonl($array_ref);
+$array_ref = decode_jsonl($string);
+
+p $string;
+p @{ $array_ref };

@@ -1,7 +1,8 @@
 package Local::SomePackage;
 use DDP;
 use Local::PerlCourse::GetterSetter qw(x y);
-# scalar only
+$\ = "\n";
+
 set_x(50);
 print $Local::SomePackage::x; # 50
 our $y = 42;

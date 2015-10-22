@@ -4,10 +4,10 @@ use Local::PerlCourse::JSONL qw(
 	decode_jsonl
 	);
 
-%h = (1 => "h1", 2 => "h2");
-%hh = (1 => "h\nh1", 2 => "hh2");
+%a = (1 => "a1", 2 => "a2");
+%b = (1 => "b1 \n test endl", 2 => "b2");
 
-@ar = (\%h, \%hh);
+@ar = (\%a, \%b);
 $array_ref = \@ar;
 
 
@@ -16,3 +16,5 @@ $array_ref = decode_jsonl($string);
 
 p $string;
 p @{ $array_ref };
+
+print "TEST OK\n" if @{ $array_ref } eq @ar;

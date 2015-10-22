@@ -4,18 +4,17 @@ use feature 'state';
 $\ = "\n";
 
 	sub import {
-		
+
 		$pack = caller;
 		*{"$pack::GlobalModuleVar"};
 		for $var (@_[1..$#_]) {
 			no strict 'refs';
 
-			$f = $pack."::set_".$var;
-
 			*{"$pack::$var"};
 
 			my $s = $var;
 
+			$f = $pack."::set_".$var;
 			*{$f} = sub {
 				${"$pack::$s"} = @_[0];
 			};

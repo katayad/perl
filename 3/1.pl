@@ -3,15 +3,17 @@ use Local::PerlCourse::JSONL qw(
 	encode_jsonl
 	decode_jsonl
 	);
+use strict;
+use warnings;
 
-%a = (1 => "ростест а1", 2 => "a2");
-%b = (1 => "b1 \n test endl", 2 => "b2");
+my %a = (1 => "ростест а1", 2 => [1, 2]);
+my %b = (1 => "b1 \n test endl", 2 => "b2");
 
-@ar = (\%a, \%b);
-$array_ref = \@ar;
+my @ar = (\%a, \%b);
+my $array_ref = \@ar;
 
 
-$string = encode_jsonl($array_ref);
+my $string = encode_jsonl($array_ref);
 $array_ref = decode_jsonl($string);
 
 p $string;

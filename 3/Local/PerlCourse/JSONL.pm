@@ -1,19 +1,20 @@
 package Local::PerlCourse::JSONL;
 
+use strict;
+use warnings;
+
 use JSON;
 use DDP;
 
 use Exporter 'import';	
-@EXPORT_OK = qw(encode_jsonl decode_jsonl);
+our @EXPORT_OK = qw(encode_jsonl decode_jsonl);
 
 	our %trans;
 
 	sub encode_jsonl
 	{
-		my @in = @{$_[0]};
-		#p @in;
 		my $ans;
-		for $i (@in) {
+		for my $i (@{$_[0]}) {
 			$ans .= JSON::to_json($i)."\n";
 		}
 		return $ans;
@@ -22,9 +23,9 @@ use Exporter 'import';
 	sub decode_jsonl
 	{
 		my @in = split("\n", $_[0]);
-		#p @in;
+
 		our @ans;
-		for $i (@in) {
+		for my $i (@in) {
 			push(@ans, JSON::from_json($i));
 		}
 		return \@ans;		

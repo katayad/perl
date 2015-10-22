@@ -1,5 +1,8 @@
 use DDP;
 use Local::PerlCourse::Currency qw(set_rate);
+use strict;
+use warnings;
+$\ = "\n";
 
 set_rate(#tubricks in dollar
 	usd => 1,

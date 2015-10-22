@@ -1,27 +1,25 @@
 package Local::PerlCourse::GetterSetter;
 use DDP;
-use feature 'state';
+use strict;
+use warnings;
 $\ = "\n";
 
 	sub import {
+		my $pack = caller;
 
-		$pack = caller;
-		*{"$pack::GlobalModuleVar"};
-		for $var (@_[1..$#_]) {
+		for my $var (@_[1..$#_]) {
 			no strict 'refs';
-
-			*{"$pack::$var"};
 
 			my $s = $var;
 
-			$f = $pack."::set_".$var;
+			my $f = "${pack}::set_${var}";
 			*{$f} = sub {
-				${"$pack::$s"} = @_[0];
+				${"${pack}::${s}"} = $_[0];
 			};
 
-			$f = $pack."::get_".$var;
+			$f = "${pack}::get_${var}";
 			*{$f} = sub {
-				return ${"$pack::$s"};
+				return ${"${pack}::${s}"};
 			};
 		}
 	}

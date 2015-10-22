@@ -1,4 +1,6 @@
 package Local::SomePackage;
+use strict;
+use warnings;
 use DDP;
 use Local::PerlCourse::GetterSetter qw(x y z f);
 $\ = "\n";
@@ -10,3 +12,4 @@ print get_y(); # 42
 set_y(11);
 set_f(3);
 print get_y(); # 11
+$Local::SomePackage::x = 5;

@@ -4,7 +4,7 @@ use Local::PerlCourse::JSONL qw(
 	decode_jsonl
 	);
 
-%a = (1 => "a1", 2 => "a2");
+%a = (1 => "ростест а1", 2 => "a2");
 %b = (1 => "b1 \n test endl", 2 => "b2");
 
 @ar = (\%a, \%b);

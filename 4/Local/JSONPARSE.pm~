@@ -1,0 +1,10 @@
+package Local::JSONPARSE;
+
+use Exporter 'import';	
+@EXPORT_OK = qw(decode_json);
+
+sub decode_json {
+	$s = shift();
+	$s =~ "/^\{(.)\}\{(.)\}$/";
+	return $2;
+}

@@ -62,10 +62,9 @@ sub my_decode_json {
 	alarm(3);
 	my $jsRes;
 	"a" =~ /a/; 
-    UNSAFE_SIGNALS {
-		$s =~ /^\s*\{($js)\}\s*$/;
-		$jsRes = $1;
-	};
+
+	$s =~ /^\s*\{($js)\}\s*$/;
+	$jsRes = $1;
 	if ($jsRes)
 	{
 		$s = $jsRes;
@@ -78,7 +77,6 @@ sub my_decode_json {
 			my $cur1 = $1;
 			my $cur2 = $2;
 			stringCrutch(\$cur1);
-			stringCrutch(\$cur2);
 			
 			$ans{$cur1} = my_decode_json($cur2);
 		}
@@ -88,10 +86,9 @@ sub my_decode_json {
 	my $arrRes;
 	"a" =~ /a/; 
 	
-	UNSAFE_SIGNALS {
-		$s =~ /\[($arr)\]/;
-		$arrRes = $1;
-	};
+	$s =~ /\[($arr)\]/;
+	$arrRes = $1;
+
 	if ($arrRes)
 	{	
 		if (!($arrRes =~ m/,\s*$/)) {
@@ -101,10 +98,16 @@ sub my_decode_json {
 		my @ans;
 		while ($s =~ /$newArrElement/g) {
 			my $cur1 = $1;
-			stringCrutch(\$cur1);
 			push @ans, my_decode_json($cur1);
 		}
 		return \@ans;
+	}
+	if ($s =~ m/"$str"/)
+	{
+		stringCrutch(\$s);
+	}
+	else {
+		$s = eval($s);
 	}
 	return $s;
 }

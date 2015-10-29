@@ -13,6 +13,7 @@ $SIG{ALRM} = sub { print "Timeout; It seems the input is invalid"; die };
 use Exporter 'import';	
 our @EXPORT_OK = qw(my_decode_json);
 $\ = "\n";
+#----------------------------------------------------
 my $arr;
 my $js;
 my $str;
@@ -26,7 +27,7 @@ my $newJsonElement;
 my $newArrElement;
 
 $arr = qr/ (?:[^\[\]]+ | \[ (??{ $arr }) \] )* /x;
-#my $json = qr/^\s*\{[^p]*\}\s*$/;
+
 $js = qr/ (?:[^{}]+ | \{ (??{ $js    }) \} )*  /x;
 $str = qr/(?: [^"] | (?<=\\)")+/x;
 $num = qr/-?\d*\.?\d*/x;
@@ -37,10 +38,6 @@ $value = qr/ (?: \{$js\} | \[$arr\] | "$str" | $num) /x;
 
 $newJsonElement = qr/($key) \s* : \s* ($value) ,*/x;
 $newArrElement = qr/($value) \s*,/x;
-
-my $t ='op';
-
-my $temp = "ans";
 
 sub stringCrutch
 {

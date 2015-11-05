@@ -1,18 +1,18 @@
 package Local::JSONPARSE;
 use utf8;
 use DDP;
+use Data::Dumper;
 
-use Perl::Unsafe::Signals;
 use Encode qw(encode decode);
 
 use warnings;
 use strict;
 
-$SIG{ALRM} = sub { print "Timeout; It seems the input is invalid"; die };
+
 
 use Exporter 'import';	
 our @EXPORT_OK = qw(my_decode_json);
-$\ = "\n";
+
 #----------------------------------------------------
 my $arr;
 my $js;
@@ -30,7 +30,8 @@ $arr = qr/ (?:[^\[\]]+ | \[ (??{ $arr }) \] )* /x;
 
 $js = qr/ (?:[^{}]+ | \{ (??{ $js    }) \} )*  /x;
 $str = qr/(?: [^"] | (?<=\\)")+/x;
-$num = qr/-?\d*\.?\d*/x;
+#$num = qr/-?\d*\.?\d*/x;
+$num = qr/([+-]?(?:\d+\.\d+|\d+\.|\.\d+|\d+))([eE]([+-]?\d+))?/;
 
 $hasLastComma = qr/,\s*(?: \} | \] )\s*$/;
 $key = qr/"$str"/x;
@@ -51,20 +52,19 @@ sub stringCrutch
 }
 
 sub my_decode_json {
+
+	local $SIG{ALRM} = sub { print "Timeout; just limit in case of error"; die };
+
 	my $s = shift();
 	if (!utf8::is_utf8($s)) {
-		$s = encode("utf-8", $s);
+		$s = decode("utf-8", $s);
 	}
 	
 	alarm(3);
-	my $jsRes;
-	"a" =~ /a/; 
 
-	$s =~ /^\s*\{($js)\}\s*$/;
-	$jsRes = $1;
-	if ($jsRes)
+	if ($s =~ /^\s*\{($js)\}\s*$/)
 	{
-		$s = $jsRes;
+		$s = $1;
 		my %ans;
 		if (!($s =~ /$hasLastComma/)) {
 			$s =~ s/\}\s*$/,\}/;
@@ -73,6 +73,7 @@ sub my_decode_json {
 		while ($s =~ /$newJsonElement/g) {
 			my $cur1 = $1;
 			my $cur2 = $2;
+
 			stringCrutch(\$cur1);
 			
 			$ans{$cur1} = my_decode_json($cur2);
@@ -80,14 +81,10 @@ sub my_decode_json {
 
 		return \%ans;
 	}
-	my $arrRes;
-	"a" =~ /a/; 
 	
-	$s =~ /\[($arr)\]/;
-	$arrRes = $1;
-
-	if ($arrRes)
+	if ($s =~ /\[($arr)\]/)
 	{	
+		my $arrRes = $1;
 		if (!($arrRes =~ m/,\s*$/)) {
 			$arrRes .= ",";
 		}
@@ -103,8 +100,17 @@ sub my_decode_json {
 	{
 		stringCrutch(\$s);
 	}
-	else {
-		$s = eval($s);
+	elsif ($s =~ /$num/) {
+		$s = $1;
+		if (defined $3) {
+			$s *= 10 ** $3;
+		}
+		$s += 0;
+	}
+	else
+	{
+		print "!!!!!";
+		return "";
 	}
 	return $s;
 }

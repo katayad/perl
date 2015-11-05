@@ -12,6 +12,7 @@ use strict;
 use Data::Dumper;
 use Data::Compare;
 
+local $\ = "\n";
 
 my $fh;
 open( $fh, '<', 'test.txt');
@@ -29,6 +30,8 @@ for my $test (@tests) {
 	
 	if (Compare(\%myans, \%ans)) {
 		print "OK";
+		#print Dumper(\%myans);
+		#print Dumper(\%ans);
 	}
 	else {
 		print "FAIL";

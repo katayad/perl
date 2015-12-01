@@ -187,15 +187,12 @@ PERL_ARCHIVE_AFTER =
 
 
 TO_INST_PM = lib/PerlIO/via/Numerator.pm \
-	lib/PerlIO/via/Numerator3.pm \
 	lib/myTest.pl \
 	lib/myTest.txt \
 	lib/pureOpenTest.pl
 
 PM_TO_BLIB = lib/PerlIO/via/Numerator.pm \
 	blib/lib/PerlIO/via/Numerator.pm \
-	lib/PerlIO/via/Numerator3.pm \
-	blib/lib/PerlIO/via/Numerator3.pm \
 	lib/myTest.pl \
 	blib/lib/myTest.pl \
 	lib/myTest.txt \
@@ -868,7 +865,6 @@ ppd :
 pm_to_blib : $(FIRST_MAKEFILE) $(TO_INST_PM)
 	$(NOECHO) $(ABSPERLRUN) -MExtUtils::Install -e 'pm_to_blib({@ARGV}, '\''$(INST_LIB)/auto'\'', q[$(PM_FILTER)], '\''$(PERM_DIR)'\'')' -- \
 	  lib/PerlIO/via/Numerator.pm blib/lib/PerlIO/via/Numerator.pm \
-	  lib/PerlIO/via/Numerator3.pm blib/lib/PerlIO/via/Numerator3.pm \
 	  lib/myTest.pl blib/lib/myTest.pl \
 	  lib/myTest.txt blib/lib/myTest.txt \
 	  lib/pureOpenTest.pl blib/lib/pureOpenTest.pl 

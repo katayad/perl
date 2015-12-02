@@ -7,13 +7,6 @@ use Calc;
 
 local $\ = "\n";
 
-
-sub new
-{
-    my $class = shift;
-    return bless {}, $class;
-}
-
 sub set_connect {
 	my $pkg = shift;
 	my $ip = shift;
@@ -26,42 +19,53 @@ sub set_connect {
 		Type => SOCK_STREAM
 	)
 	or die " Client($$): Can`t connect to $ip $/";
+
+	if (__getMsg($server) eq "OK") { 
+		print " Client($$): connected to $ip";
+	}
+	else {
+		print " Client($$): server $ip is busy"
+	}
+
+	$pkg->{server} = $server;
 	return $server;
 }
 
 sub do_request {
-	my $pck = shift;
-	my $server = shift;
-	my $type = shift;
+	my ($pck, $server, $type, $msg) = @_;
+	my $m = $msg;
 
-	my $msg = Sfera::TCP::Calc->pack_message(shift);
- 	$server->send(Sfera::TCP::Calc->pack_header($type, length $msg));
-	$server->send($msg);
+	__sendMsg($server, $msg, $type);
+	$msg = __getMsg($server);
 
-	$server->recv($msg, 8);
+	if ($m eq "END") {
+		close($server);
+	}
 
-	my ($type, $size) = Sfera::TCP::Calc->unpack_header($msg);
-	$server->recv($msg, $size);
-	$msg = Sfera::TCP::Calc->pack_message($msg);
-	#print "msg: $msg";
 	return $msg;
 }
-sub closeConnection {
-	#\close($server);
-	print " CLient($$): stoped";
+
+
+sub __getMsg {
+	my ($client) = shift;
+	$client->recv(my $msg, 8);
+	my ($type, $size) = Sfera::TCP::Calc->unpack_header($msg);
+	$client->recv($msg, $size);
+
+	return Sfera::TCP::Calc->unpack_message($msg);
 }
-=test
-my $server = set_connect(undef, "127.0.0.1", "8082");
-my $w = 5;
-print do_request(undef, $server, 3, "(3 + 4) * 2");
-sleep($w);
-print do_request(undef, $server, 2, "(3 + 4) * 2");
-sleep($w);
-print do_request(undef, $server, 1, "(3 + 4) * 2");
-sleep($w);
-close($server);
-#print do_request($server, 1, "(3 + 4) * 2");
-#print do_request($server, 3, "END");
-=cut
+
+sub __sendMsg {
+	my ($client, $msg, $type) = @_;
+	$msg = Sfera::TCP::Calc->pack_message($msg);
+	$client->send(Sfera::TCP::Calc->pack_header($type, length $msg));
+	$client->send($msg);
+}
+
+sub new
+{
+    my $class = shift;
+    return bless {}, $class;
+}
 1;
 

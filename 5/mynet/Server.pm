@@ -12,49 +12,30 @@ my $die = 0;
 my @procs;
 my $queries = 0;
 my $connections = 0;
+my $time;
 
 $SIG{'USR1'} = sub {
 	print "  {";
 	print "    Current Connections: ".(scalar @procs);
 	print "    Connections: $connections";
 	print "    Queries: $queries";
+	print "    Time since start: ".(time() - $time);
 	print "  }";
 };
 $SIG{'INT'} = sub { $die = 1; die; }; 
 
 $SIG{CHLD} = \&REAPER;
-sub REAPER {
-    my $stiff;
-    while (($stiff = waitpid(-1, &WNOHANG)) > 0) {
-        # do something with $stiff if you want
-    }
-    $SIG{CHLD} = \&REAPER;                  # install *after* calling waitpid
-}
 
+$SIG{'USR2'} = sub { 
+	$queries++;
+};
 
-sub new
-{
-    my $class = shift;
-    
-    return bless {}, $class;
-}
-
-sub clearProcs {
-	for (my $i = 0; $i < scalar @procs; $i++) {
-		#print "trying to kill, ".$procs[$i];
-		my $exists = kill 0, $procs[$i];
-		$exists = kill 0, $procs[$i];
-		if ( !$exists ) {
-			#print "trying to splice, ".$procs[$i];
-			splice @procs, $i, 1;
-			$i--;
-		}
-	}
-}
 
 sub start_server {
 	my $pkg = shift;
 	my $port = shift;
+
+	$time = time();
 	
 	my $server = IO::Socket::INET->new(
 		LocalPort => $port,
@@ -64,88 +45,107 @@ sub start_server {
 		)
 	or die "Server($$):  Can't create server on port $port : $@ $/";
 
+	print "Server($$): started on $port";
+
 	while (!$die) {
 		clearProcs();
 		my $client = $server->accept();
 		
 		if (!(defined $client)) {
-			#print "      !!!!!!caught undef"
+			print "      !!!!!!caught undef"
 		}
 		elsif (scalar @procs >= 1) {
-			#print "Server($$):  Server is busy";
+			__sendMsg($client, "Server is Busy");
 			close( $client );
 		}
 		else {
-			#print "Server($$):  Someone connected";
+			__sendMsg($client, "OK");
+
+			print "Server($$):  Someone connected";
+			$connections++;
 			my $pid = 0;
 			if (!($pid = fork()))
 			{
 				child($client);
-				#print "Child($$):    died";
+				print "Child($$):    died";
+				close( $client );
 				exit(1);
 			}
-			elsif ($pid) {
+			else {
 				push @procs, $pid;
+				close( $client );
 			}
-
-			close( $client );
+			
 		}
-		#print @procs;
 		
 	}
 	close( $server );
 	print "Server($$):  stoped";
-
-	#init server
-	#accept connection
-	#fork
-	#receive 
-	#Sfera::TCP::Calc->unpack_header(...)
-	#Sfera::TCP::Calc->unpack_message(...)
-	#process
-	#Sfera::TCP::Calc->pack_header(...)
-	#Sfera::TCP::Calc->pack_message(...)
-	#response
 }
 
 sub child {
-	$connections++;
-
 	my $client = shift;
 	$client->autoflush(1);
 	
-	
 	while ($client->connected) {
-		$client->recv(my $msg, 8);
-		my ($type, $size) = Sfera::TCP::Calc->unpack_header($msg);
-		$client->recv($msg, $size);
-
-		$msg = Sfera::TCP::Calc->unpack_message($msg);
+		
+		my ($type, $msg) = __getMsg($client);
 		
 		if ($msg eq "END") {
-			#print "Child($$):  got END";
-			close( $client );
-			last;
+			__sendMsg($client, "    Child($$):  got END");
+			return;
 		}
 
-		if ($type == 1) {
-			$msg = Sfera::TCP::Calc->pack_message(Sfera::TCP::Calc->TYPE_CALC($msg));
-		}
-		elsif ($type == 2) {
-			$msg = Sfera::TCP::Calc->pack_message(Sfera::TCP::Calc->TYPE_BRACKETCHECK($msg));
-		}
-		elsif ($type == 3) {
-			$msg = Sfera::TCP::Calc->pack_message(Sfera::TCP::Calc->TYPE_NOTATION($msg));
-		}
-		#print "Child($$):  sending $msg";
-		$client->send(Sfera::TCP::Calc->pack_header($type, length $msg));
-		$client->send($msg);
-		$queries++;
+		if ($type == 1) { __sendMsg($client, Sfera::TCP::Calc->TYPE_CALC($msg)); }
+		elsif ($type == 2) { __sendMsg($client, Sfera::TCP::Calc->TYPE_BRACKETCHECK($msg)); }
+		elsif ($type == 3) { __sendMsg($client, Sfera::TCP::Calc->TYPE_NOTATION($msg)); }
+		else { __sendMsg($client, "Unknown type"); }
+		
+		kill 'USR2', getppid(); 
 	}
-	
+	#print "out";
 }
 
-#start_server(undef, "8082");
+sub REAPER {
+    my $stiff;
+    while (($stiff = waitpid(-1, &WNOHANG)) > 0) {
+        # do something with $stiff if you want
+    }
+    $SIG{CHLD} = \&REAPER;                  # install *after* calling waitpid
+}
+
+sub clearProcs {
+	for (my $i = 0; $i < scalar @procs; $i++) {
+		my $exists = kill 0, $procs[$i];
+		$exists = kill 0, $procs[$i];
+		if ( !$exists ) {
+			splice @procs, $i, 1;
+			$i--;
+		}
+	}
+}
+
+sub __getMsg {
+	my ($client) = shift;
+	$client->recv(my $msg, 8);
+	my ($type, $size) = Sfera::TCP::Calc->unpack_header($msg);
+	$client->recv($msg, $size);
+
+	return ($type, Sfera::TCP::Calc->unpack_message($msg));
+}
+
+sub __sendMsg {
+	my ($client, $msg) = @_;
+	$msg = Sfera::TCP::Calc->pack_message($msg);
+	$client->send(Sfera::TCP::Calc->pack_header("1", length $msg));
+	$client->send($msg);
+}
+
+sub new
+{
+    my $class = shift;
+    return bless {}, $class;
+}
 
 1;
 

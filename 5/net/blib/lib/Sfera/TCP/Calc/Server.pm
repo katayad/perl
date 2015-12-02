@@ -21,7 +21,7 @@ $SIG{'USR1'} = sub {
 	print "  }";
 };
 $SIG{'INT'} = sub { 
-	
+	die;
 }; 
 
 $SIG{CHLD} = \&REAPER;
@@ -66,34 +66,33 @@ sub start_server {
 		)
 	or die "Server($$):  Can't create server on port $port : $@ $/";
 
+	print "Server($$): started on $port";
+
 	while (!$die and my $client = $server->accept()) {
 		clearProcs();
 		
 		
 		if (!(defined $client)) {
-			#print "      !!!!!!caught undef"
+			#print "      !!!!!!caught undef";
 			last;
 		}
 		elsif (scalar @procs >= 5) {
-			#print "Server($$):  Server is busy";
+			#__sendMsg($client, "Server is Busy");
 			close( $client );
 		}
 		else {
-			#print "Server($$):  Someone connected";
+			#__sendMsg($client, "OK");
 			my $pid = 0;
 			if (!($pid = fork()))
 			{
 				child($client);
-				#print "Child($$):    died";
 				exit(1);
 			}
 			elsif ($pid) {
 				push @procs, $pid;
 			}
-
 			close( $client );
 		}
-		#print @procs;
 		
 	}
 	close( $server );
@@ -101,50 +100,41 @@ sub start_server {
 }
 
 sub child {
-	$connections++;
-
 	my $client = shift;
 	$client->autoflush(1);
 	
-	
 	while ($client->connected) {
-		$client->recv(my $msg, 8);
-		my ($type, $size) = Sfera::TCP::Calc->unpack_header($msg);
-		$client->recv($msg, $size);
-
-		$msg = Sfera::TCP::Calc->unpack_message($msg);
+		
+		my ($type, $msg) = __getMsg($client);
 		
 		if ($msg eq "END") {
-			#print "Child($$):  got END";
-			close( $client );
-			last;
+			__sendMsg($client, "    Child($$):  got END");
+			return;
 		}
 
-		if ($type == 1) {
-			$msg = Sfera::TCP::Calc->pack_message(Sfera::TCP::Calc->TYPE_CALC($msg));
-		}
-		elsif ($type == 2) {
-			$msg = Sfera::TCP::Calc->pack_message(Sfera::TCP::Calc->TYPE_BRACKETCHECK($msg));
-		}
-		elsif ($type == 3) {
-			$msg = Sfera::TCP::Calc->pack_message(Sfera::TCP::Calc->TYPE_NOTATION($msg));
-		}
-		else {
-			$msg = Sfera::TCP::Calc->pack_message("Unknown type");
-		}
-
-		open(my $fh, ">>", "deb.txt");
-		print $fh $type."\n";
-		print $fh $msg."\n";
-		print $fh "\n";
-		close($fh);
-
-		#print "Child($$):  sending $msg";
-		$client->send(Sfera::TCP::Calc->pack_header($type, length $msg));
-		$client->send($msg);
+		if ($type == 1) { __sendMsg($client, Sfera::TCP::Calc->TYPE_CALC($msg)); }
+		elsif ($type == 2) { __sendMsg($client, Sfera::TCP::Calc->TYPE_BRACKETCHECK($msg)); }
+		elsif ($type == 3) { __sendMsg($client, Sfera::TCP::Calc->TYPE_NOTATION($msg)); }
+		else { __sendMsg($client, "Unknown type"); }
+		
 		$queries++;
 	}
-	
+}
+
+sub __getMsg {
+	my ($client) = shift;
+	$client->recv(my $msg, 8);
+	my ($type, $size) = Sfera::TCP::Calc->unpack_header($msg);
+	$client->recv($msg, $size);
+
+	return ($type, Sfera::TCP::Calc->unpack_message($msg));
+}
+
+sub __sendMsg {
+	my ($client, $msg) = @_;
+	$msg = Sfera::TCP::Calc->pack_message($msg);
+	$client->send(Sfera::TCP::Calc->pack_header("1", length $msg));
+	$client->send($msg);
 }
 
 #start_server(undef, "8082");

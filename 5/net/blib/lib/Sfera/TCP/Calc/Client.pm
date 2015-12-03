@@ -20,13 +20,17 @@ sub set_connect {
 	)
 	or die " Client($$): Can`t connect to $ip $/";
 
-	my $m = __getMsg($server);
-	#my $m = "OK";
-	if ($m eq "OK") { 
-		#warn " Client($$): connected to $ip";
+	my $msg;
+	#$msg = __getMsg($server);
+	#$msg = "OK";
+	$server->recv($msg, 2);
+	if ($msg eq "OK") { 
+		#warn " Client($$): connected to $ip ($msg)";
 	}
 	else {
-		die " Client($$): server $ip is busy ($m)"
+		close($server);
+		undef $server;
+		#warn " Client($$): server $ip is busy ($msg)"
 	}
 
 	return $server;
@@ -34,6 +38,11 @@ sub set_connect {
 
 sub do_request {
 	my ($pck, $server, $type, $msg) = @_;
+
+	if (!(defined $server)) {
+		die;
+	}
+
 	my $m = $msg;
 
 	__sendMsg($server, $msg, $type);
@@ -51,7 +60,7 @@ sub __getMsg {
 	my ($client) = shift;
 	$client->recv(my $msg, 8);
 	my ($type, $size) = Sfera::TCP::Calc->unpack_header($msg);
-	warn "Got: ($type, $size)";
+	#warn "Got: ($type, $size)";
 	$client->recv($msg, $size);
 
 	return Sfera::TCP::Calc->unpack_message($msg);

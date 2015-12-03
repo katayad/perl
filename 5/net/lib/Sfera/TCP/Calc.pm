@@ -118,25 +118,45 @@ sub pack_header {
 	my $pkg = shift;
 	my $type = shift;
 	my $size = shift;
+	#my $ans = unpack "b8", $type;
+	#$ans .= unpack "b16", $size;
+	#print $ans;
+	#return $ans;
+	#print pack("i2", $type, $size);
 	return pack("i2", $type, $size);
 }
 
 sub unpack_header {
 	my $pkg = shift;
 	my $header = shift;
+
+	#print $header;
+	#return pack("b8b16", $header);
+
 	return unpack("i2", $header);
 }
 
 sub pack_message {
 	my $pkg = shift;
 	my $message = shift;
-	return pack("a*", $message);
+	my $ans = "";
+
+	for my $ch (split //,$message ) {
+		$ch = unpack "b*", $ch;
+		$ans .= $ch;
+	}
+	return $ans;
 }
 
 sub unpack_message {
 	my $pkg = shift;
 	my $message = shift;
-	return unpack("a*", $message);
+	my $ans = "";
+
+	for my $ch (unpack ("(A8)*", $message) ) {
+		$ans .= pack "b8", $ch;
+	}
+	return $ans;
 }
 
 1;

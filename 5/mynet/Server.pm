@@ -15,14 +15,20 @@ my $connections = 0;
 my $time;
 
 $SIG{'USR1'} = sub {
-	clearProcs();
-	print "    Current Connections: ".(scalar @procs);
-};
+ 	print "  {";
+ 	print "    Current Connections: ".(scalar @procs);
+ 	print "    Connections: $connections";
+ 	print "    Queries: $queries";
+	print "    Time since start: ".(time() - $time);
+ 	print "  }";
+ };
 $SIG{'INT'} = sub { $die = 1;}; 
 
 $SIG{CHLD} = \&REAPER;
 
-
+$SIG{'USR2'} = sub { 
+	$queries++;
+};
 
 sub REAPER {
     my $stiff;
@@ -42,11 +48,9 @@ sub new
 
 sub clearProcs {
 	for (my $i = 0; $i < scalar @procs; $i++) {
-		#print "trying to kill, ".$procs[$i];
 		my $exists = kill 0, $procs[$i];
 		$exists = kill 0, $procs[$i];
 		if ( !$exists ) {
-			#print "trying to splice, ".$procs[$i];
 			splice @procs, $i, 1;
 			$i--;
 		}
@@ -67,7 +71,7 @@ sub start_server {
 		)
 	or die "Server($$):  Can't create server on port $port : $@ $/";
 
-	#warn "Server($$): started on $port";
+	warn "Server($$): started";
 
 	$time = time();
 
@@ -76,24 +80,20 @@ sub start_server {
 		my $client = $server->accept();
 		
 		if (!(defined $client)) {
-			#warn "Server($$):     !!!!!!caught undef $!";
-			#last;
 			if ($die) {last;};
 		}
-		elsif (scalar @procs >= 1) {
-			__sendMsg($client, "Server is Busy");
+		elsif (scalar @procs >= 5) {
+			$client->send("FU");
 			close( $client );
 		}
 		else {
-			__sendMsg($client, "OK");
+			$client->send("OK");
 
-			#warn "Server($$):  Someone connected";
 			$connections++;
 			my $pid = 0;
 			if (!($pid = fork()))
 			{
 				child($client);
-				#warn "Child($$):    died";
 				close( $client );
 				exit(1);
 			}
@@ -130,7 +130,7 @@ sub child {
 		elsif ($type == 3) { __sendMsg($client, Sfera::TCP::Calc->TYPE_NOTATION($msg)); }
 		else { __sendMsg($client, "Unknown type"); }
 		
-		#kill 'USR2', getppid();
+		kill 'USR2', getppid();
 	}
 	 
 }
@@ -146,12 +146,12 @@ sub __getMsg {
 
 sub __sendMsg {
 	my ($client, $msg) = @_;
+	
 	$msg = Sfera::TCP::Calc->pack_message($msg);
 	$client->send(Sfera::TCP::Calc->pack_header("1", length $msg));
 	$client->send($msg);
+	
 }
-
-#start_server(undef, "8082");
 
 1;
 

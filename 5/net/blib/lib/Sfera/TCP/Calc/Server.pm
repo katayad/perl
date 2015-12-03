@@ -12,19 +12,18 @@ my $die = 0;
 my @procs;
 my $queries = 0;
 my $connections = 0;
+my $time;
 
 $SIG{'USR1'} = sub {
-	print "  {";
+	clearProcs();
 	print "    Current Connections: ".(scalar @procs);
-	print "    Connections: $connections";
-	print "    Queries: $queries";
-	print "  }";
 };
-$SIG{'INT'} = sub { 
-	die;
-}; 
+$SIG{'INT'} = sub { $die = 1;}; 
 
 $SIG{CHLD} = \&REAPER;
+
+
+
 sub REAPER {
     my $stiff;
     while (($stiff = waitpid(-1, &WNOHANG)) > 0) {
@@ -57,46 +56,60 @@ sub clearProcs {
 sub start_server {
 	my $pkg = shift;
 	my $port = shift;
+
+	$time = time();
 	
 	my $server = IO::Socket::INET->new(
 		LocalPort => $port,
 		Type => SOCK_STREAM,
 		ReuseAddr => 1,
-		Listen => 5,
+		Listen => 10,
 		)
 	or die "Server($$):  Can't create server on port $port : $@ $/";
 
-	print "Server($$): started on $port";
+	#warn "Server($$): started on $port";
 
-	while (!$die and my $client = $server->accept()) {
+	$time = time();
+
+	while (!$die) {
 		clearProcs();
-		
+		my $client = $server->accept();
 		
 		if (!(defined $client)) {
-			#print "      !!!!!!caught undef";
-			last;
+			#warn "Server($$):     !!!!!!caught undef $!";
+			#last;
+			if ($die) {last;};
 		}
 		elsif (scalar @procs >= 5) {
-			#__sendMsg($client, "Server is Busy");
+			__sendMsg($client, "Server is Busy");
 			close( $client );
 		}
 		else {
-			#__sendMsg($client, "OK");
+			__sendMsg($client, "OK");
+
+			#warn "Server($$):  Someone connected";
+			$connections++;
 			my $pid = 0;
 			if (!($pid = fork()))
 			{
 				child($client);
+				#warn "Child($$):    died";
+				close( $client );
 				exit(1);
 			}
-			elsif ($pid) {
+			else {
 				push @procs, $pid;
+				close( $client );
 			}
-			close( $client );
+			
 		}
 		
 	}
+	for my $proc (@procs) {
+		waitpid($proc, 0);
+	}
 	close( $server );
-	print "Server($$):  stoped";
+	warn "Server($$):  stoped";
 }
 
 sub child {
@@ -117,8 +130,9 @@ sub child {
 		elsif ($type == 3) { __sendMsg($client, Sfera::TCP::Calc->TYPE_NOTATION($msg)); }
 		else { __sendMsg($client, "Unknown type"); }
 		
-		$queries++;
+		#kill 'USR2', getppid();
 	}
+	 
 }
 
 sub __getMsg {
@@ -132,9 +146,15 @@ sub __getMsg {
 
 sub __sendMsg {
 	my ($client, $msg) = @_;
+	
 	$msg = Sfera::TCP::Calc->pack_message($msg);
+	warn $msg;
+	warn "!!1!!";
 	$client->send(Sfera::TCP::Calc->pack_header("1", length $msg));
+	warn "!!2!!";
 	$client->send($msg);
+	warn "!!3!!";
+	
 }
 
 #start_server(undef, "8082");

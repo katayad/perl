@@ -20,14 +20,15 @@ sub set_connect {
 	)
 	or die " Client($$): Can`t connect to $ip $/";
 
-	if (__getMsg($server) eq "OK") { 
-		print " Client($$): connected to $ip";
+	my $m = __getMsg($server);
+	#my $m = "OK";
+	if ($m eq "OK") { 
+		warn " Client($$): connected to $ip";
 	}
 	else {
-		print " Client($$): server $ip is busy"
+		die " Client($$): server $ip is busy"
 	}
 
-	$pkg->{server} = $server;
 	return $server;
 }
 

@@ -15,21 +15,43 @@ my $connections = 0;
 my $time;
 
 $SIG{'USR1'} = sub {
-	print "  {";
+	clearProcs();
 	print "    Current Connections: ".(scalar @procs);
-	print "    Connections: $connections";
-	print "    Queries: $queries";
-	print "    Time since start: ".(time() - $time);
-	print "  }";
 };
-$SIG{'INT'} = sub { $die = 1; die; }; 
+$SIG{'INT'} = sub { $die = 1;}; 
 
 $SIG{CHLD} = \&REAPER;
 
-$SIG{'USR2'} = sub { 
-	$queries++;
-};
 
+
+sub REAPER {
+    my $stiff;
+    while (($stiff = waitpid(-1, &WNOHANG)) > 0) {
+        # do something with $stiff if you want
+    }
+    $SIG{CHLD} = \&REAPER;                  # install *after* calling waitpid
+}
+
+
+sub new
+{
+    my $class = shift;
+    
+    return bless {}, $class;
+}
+
+sub clearProcs {
+	for (my $i = 0; $i < scalar @procs; $i++) {
+		#print "trying to kill, ".$procs[$i];
+		my $exists = kill 0, $procs[$i];
+		$exists = kill 0, $procs[$i];
+		if ( !$exists ) {
+			#print "trying to splice, ".$procs[$i];
+			splice @procs, $i, 1;
+			$i--;
+		}
+	}
+}
 
 sub start_server {
 	my $pkg = shift;
@@ -45,14 +67,18 @@ sub start_server {
 		)
 	or die "Server($$):  Can't create server on port $port : $@ $/";
 
-	print "Server($$): started on $port";
+	#warn "Server($$): started on $port";
+
+	$time = time();
 
 	while (!$die) {
 		clearProcs();
 		my $client = $server->accept();
 		
 		if (!(defined $client)) {
-			print "      !!!!!!caught undef"
+			#warn "Server($$):     !!!!!!caught undef $!";
+			#last;
+			if ($die) {last;};
 		}
 		elsif (scalar @procs >= 1) {
 			__sendMsg($client, "Server is Busy");
@@ -61,13 +87,13 @@ sub start_server {
 		else {
 			__sendMsg($client, "OK");
 
-			print "Server($$):  Someone connected";
+			#warn "Server($$):  Someone connected";
 			$connections++;
 			my $pid = 0;
 			if (!($pid = fork()))
 			{
 				child($client);
-				print "Child($$):    died";
+				#warn "Child($$):    died";
 				close( $client );
 				exit(1);
 			}
@@ -79,8 +105,11 @@ sub start_server {
 		}
 		
 	}
+	for my $proc (@procs) {
+		waitpid($proc, 0);
+	}
 	close( $server );
-	print "Server($$):  stoped";
+	warn "Server($$):  stoped";
 }
 
 sub child {
@@ -101,28 +130,9 @@ sub child {
 		elsif ($type == 3) { __sendMsg($client, Sfera::TCP::Calc->TYPE_NOTATION($msg)); }
 		else { __sendMsg($client, "Unknown type"); }
 		
-		kill 'USR2', getppid(); 
+		#kill 'USR2', getppid();
 	}
-	#print "out";
-}
-
-sub REAPER {
-    my $stiff;
-    while (($stiff = waitpid(-1, &WNOHANG)) > 0) {
-        # do something with $stiff if you want
-    }
-    $SIG{CHLD} = \&REAPER;                  # install *after* calling waitpid
-}
-
-sub clearProcs {
-	for (my $i = 0; $i < scalar @procs; $i++) {
-		my $exists = kill 0, $procs[$i];
-		$exists = kill 0, $procs[$i];
-		if ( !$exists ) {
-			splice @procs, $i, 1;
-			$i--;
-		}
-	}
+	 
 }
 
 sub __getMsg {
@@ -141,11 +151,7 @@ sub __sendMsg {
 	$client->send($msg);
 }
 
-sub new
-{
-    my $class = shift;
-    return bless {}, $class;
-}
+#start_server(undef, "8082");
 
 1;
 

@@ -9,7 +9,9 @@ print "hellovadvdfvadvd df df d ffa d faf af \n";
 my $server = Test::TCP->new(
 	code => sub {
 		my $port = shift;
+		warn "|started|";
 		Sfera::TCP::Calc::Server->start_server($port);
+		warn "|stopped|";
 	},
 );
 
@@ -69,20 +71,29 @@ my $tests = [
 
 my @servers;
 for my $test (@$tests) {
+	warn "1";
 	push @servers, Sfera::TCP::Calc::Client->set_connect('127.0.0.1', $server->port) for 0..($test->{multi}-scalar(@servers));
+	#warn "2";
 	for my $serv (0..($test->{multi}-1)) {
+		#warn "3";
 		my $res = Sfera::TCP::Calc::Client->do_request($servers[$serv], $test->{type}, $test->{message}); 
+		#warn "4";
 		if (ref $test->{result}) {
 			ok(scalar grep {$_ eq $res} @{$test->{result}}, $test->{name}." in $test");
 		}
 		else {
 			is($res, $test->{result}, $test->{name}." in $test");
 		}
+		#warn "5";
 	}
+	warn "6";
+
 }
+warn "\nDONE";
 
 push @servers, Sfera::TCP::Calc::Client->set_connect('127.0.0.1', $server->port) for 1..10;
-is(scalar(grep {eval {Sfera::TCP::Calc::Client->do_request($_, 1, '( 1 + 2 ) * 1'); 1}} @servers), 5, 'Process count');
 
+is(scalar(grep {eval {Sfera::TCP::Calc::Client->do_request($_, 1, '( 1 + 2 ) * 1'); 1}} @servers), 5, 'Process count');
+#warn "1";
 done_testing();
 

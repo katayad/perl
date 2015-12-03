@@ -7,13 +7,6 @@ use Sfera::TCP::Calc;
 
 local $\ = "\n";
 
-
-sub new
-{
-    my $class = shift;
-    return bless {}, $class;
-}
-
 sub set_connect {
 	my $pkg = shift;
 	my $ip = shift;
@@ -27,16 +20,15 @@ sub set_connect {
 	)
 	or die " Client($$): Can`t connect to $ip $/";
 
-#	my $check = __getMsg($server);
-	my $check = "OK";
-	if ($check eq "OK") { 
-		#print " Client($$): connected to $ip";
+	my $m = __getMsg($server);
+	#my $m = "OK";
+	if ($m eq "OK") { 
+		#warn " Client($$): connected to $ip";
 	}
 	else {
-		#print " Client($$): server $ip is busy";
+		die " Client($$): server $ip is busy ($m)"
 	}
 
-	#$pkg->{server} = $server;
 	return $server;
 }
 
@@ -54,10 +46,12 @@ sub do_request {
 	return $msg;
 }
 
+
 sub __getMsg {
 	my ($client) = shift;
 	$client->recv(my $msg, 8);
 	my ($type, $size) = Sfera::TCP::Calc->unpack_header($msg);
+	warn "Got: ($type, $size)";
 	$client->recv($msg, $size);
 
 	return Sfera::TCP::Calc->unpack_message($msg);
@@ -68,6 +62,13 @@ sub __sendMsg {
 	$msg = Sfera::TCP::Calc->pack_message($msg);
 	$client->send(Sfera::TCP::Calc->pack_header($type, length $msg));
 	$client->send($msg);
+
+}
+
+sub new
+{
+    my $class = shift;
+    return bless {}, $class;
 }
 1;
 

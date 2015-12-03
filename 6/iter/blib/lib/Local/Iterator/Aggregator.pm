@@ -1,14 +1,9 @@
 package Local::Iterator::Aggregator;
+use base Local::Iterator;
 
 use strict;
 use warnings;
 use Data::Dumper;
-
-sub new {
-	my ($class, %params) = @_;
-	$params{it} = 0;
-	return bless \%params, $class;
-}
 
 sub next {
 	my ($class) = @_;
@@ -31,17 +26,6 @@ sub next {
 	return (\@ar, $end);
 }
 
-sub all {
-	my ($class) = @_;
-
-	my @ar;
-	my ($next, $end) = $class->next();
-	while (!$end) {
-		push @ar, $next;
-		($next, $end) = $class->next();
-	}
-	return \@ar;
-}
 
 
 =encoding utf8

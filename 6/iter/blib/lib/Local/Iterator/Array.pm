@@ -1,14 +1,9 @@
 package Local::Iterator::Array;
+use base Local::Iterator;
 
 use strict;
 use warnings;
 use Data::Dumper;
-
-sub new {
-	my ($class, %params) = @_;
-	$params{it} = 0;
-	return bless \%params, $class;
-}
 
 sub next {
 	my ($class) = @_;
@@ -18,14 +13,7 @@ sub next {
 	$class->{it} += 1;
 	return ($class->{array}[$class->{it} - 1], 0); 
 }
-sub all {
-	my ($class) = @_;
 
-	my @ar = @{$class->{array}};
-	@ar = @ar[$class->{it}..(scalar @ar - 1)];
-	$class->{it} = scalar @{$class->{array}};
-	return \@ar;
-}
 =encoding utf8
 
 =head1 NAME

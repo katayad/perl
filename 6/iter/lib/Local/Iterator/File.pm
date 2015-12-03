@@ -1,15 +1,14 @@
 package Local::Iterator::File;
+use base Local::Iterator;
 
 use strict;
 use warnings;
 use Data::Dumper;
 
-sub new {
+sub new { #Здесь, я так понимаю, большого смысла наследовать нет
 	my ($class, %params) = @_;
-	$params{it} = 0;
-	$params{end} = 0;
 	if (defined $params{filename}) {
-		open($params{fh}, "<", $params{filename});
+		open($params{fh}, "<", $params{filename}) or die "$!";
 	}
 	return bless \%params, $class;
 }
@@ -24,20 +23,9 @@ sub next {
 	chomp($line);
 	return ($line, 0); 
 }
-sub all {
-	my ($class) = @_;
-	my $fh = $class->{fh};
-	my @ans;
-	while (<$fh>) {
-		chomp $_;
-		push @ans, $_;
-	}
-	return \@ans; 
-}
 sub DESTROY {
 	my ($class) = @_;
-	my $fh = $class->{fh};
-	close($fh);
+	close($class->{fh});
 }
 
 =encoding utf8

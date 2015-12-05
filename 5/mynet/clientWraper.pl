@@ -5,7 +5,7 @@ local $\ = "\n";
 my $client = Sfera::TCP::Calc::Client->new;
 my $serv = $client->set_connect("127.0.0.1", "8098");
 #print Dumper($serv);
-#sleep(25);
+sleep(10);
 print " Client($$):  ".$client->do_request($serv, 1, "1 + 2 * 3");
 
 print " Client($$):  ".$client->do_request($serv, 2, "1 + 2 * 3");
